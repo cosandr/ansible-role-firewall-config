@@ -1,0 +1,33 @@
+galaxy_info:
+  author: Andrei Costescu
+  role_name: firewall_config
+  namespace: cosandr
+  description: Configure firewalls on Linux
+
+  license: MIT
+
+  min_ansible_version: "2.12"
+
+  platforms:
+    - name: EL
+      versions:
+        - "8"
+        - "9"
+    - name: Fedora
+      versions:
+        - "35"
+        - "36"
+        - "37"
+    - name: Debian
+      versions:
+        - all
+    - name: Ubuntu
+      versions:
+        - all
+
+  galaxy_tags:
+    - firewall
+    - firewalld
+    - ufw
+
+dependencies: []
