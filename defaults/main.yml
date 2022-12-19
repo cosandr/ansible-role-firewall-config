@@ -11,3 +11,4 @@ ufw_default_outgoing: "allow"
 ufw_before_rules: ""
 ufw_trusted_sources: []
 ufw_allow_dhcpv6: true
+ufw_configure_defaults: true

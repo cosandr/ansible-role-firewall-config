@@ -7,6 +7,7 @@
   loop:
     - {direction: "incoming", policy: "{{ ufw_default_incoming }}"}
     - {direction: "outgoing", policy: "{{ ufw_default_outgoing }}"}
+  when: ufw_configure_defaults
   notify: Reload ufw
 
 - name: Add before rules
