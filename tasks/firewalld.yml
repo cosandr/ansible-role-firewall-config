@@ -13,6 +13,13 @@
 - name: Flush handlers
   ansible.builtin.meta: flush_handlers
 
+- name: Set default firewalld zone
+  ansible.builtin.command:
+    cmd: "firewall-cmd --set-default-zone={{ firewalld_default_zone }}"
+  register: __firewalld_def_zone
+  changed_when: '"ZONE_ALREADY_SET" not in __firewalld_def_zone.stderr'
+  when: firewalld_default_zone
+
 - name: Add zone sources
   ansible.posix.firewalld:
     zone: "{{ item.0.name }}"

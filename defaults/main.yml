@@ -2,6 +2,7 @@
 
 firewall_frontend: ""
 firewall_rules: []
+firewalld_default_zone: ""
 firewalld_zones: []
 firewalld_services: []
 firewall_install: false
