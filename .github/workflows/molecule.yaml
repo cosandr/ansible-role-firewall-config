@@ -21,9 +21,12 @@ jobs:
       - name: Install molecule
         run: |
           pip install -U pip wheel setuptools
-          pip install 'molecule<5.0' 'ansible-lint<6.20' 'yamllint<1.30'
+          pip install 'molecule<5.0' 'ansible-lint<6.20' 'yamllint<1.30' 'jmespath<2.0'
           pip install 'molecule-plugins[podman]<24.0'
 
       - name: Run molecule
+        env:
+          ANSIBLE_FORCE_COLOR: 'True'
+          PY_COLORS: 'True'
         run: |
           molecule test
