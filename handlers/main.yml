@@ -1,5 +1,11 @@
 ---
 
+- name: Start firewall frontend
+  ansible.builtin.systemd:
+    name: "{{ firewall_frontend }}"
+    state: started
+    enabled: true
+
 - name: Reload firewalld
   ansible.builtin.systemd:
     name: firewalld
