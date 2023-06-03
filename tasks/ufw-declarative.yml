@@ -1,0 +1,5 @@
+---
+
+- name: Not implemented
+  ansible.builtin.fail:
+    msg: "firewall_declarative_config is not supported with ufw"

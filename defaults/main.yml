@@ -6,6 +6,7 @@ firewalld_default_zone: ""
 firewalld_zones: []
 firewalld_services: []
 firewall_install: false
+firewall_declarative_config: false
 
 ufw_default_incoming: "deny"
 ufw_default_outgoing: "allow"
@@ -13,3 +14,7 @@ ufw_before_rules: ""
 ufw_trusted_sources: []
 ufw_allow_dhcpv6: true
 ufw_configure_defaults: true
+
+__firewalld_declarative_default_zones:
+  - name: public
+    forward: true

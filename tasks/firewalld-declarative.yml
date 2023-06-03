@@ -1,0 +1,41 @@
+---
+
+- name: Add public zone to facts if it's missing
+  ansible.builtin.set_fact:
+    firewalld_zones: "{{ __firewalld_declarative_default_zones + firewalld_zones }}"
+  when: firewalld_zones | selectattr('name', 'eq', 'public') | list | length == 0
+
+- name: Find existing zone files
+  ansible.builtin.find:
+    paths: "/etc/firewalld/zones"
+    patterns:
+      - "*.xml"
+  register: __zones_present
+
+- name: Copy zone file
+  ansible.builtin.template:
+    src: zone.xml.j2
+    dest: "/etc/firewalld/zones/{{ item.name }}.xml"
+    owner: root
+    group: root
+    mode: "0644"
+  loop: "{{ firewalld_zones }}"
+  loop_control:
+    label: "{{ item.name }}"
+  register: __zones_copied
+  notify: Reload firewalld
+
+- name: Set list facts
+  ansible.builtin.set_fact:
+    __zones_present_list: "{{ __zones_present | json_query('files[*].path') | default([]) }}"
+    __zones_copied_list: "{{ __zones_copied_tmp + __zones_copied_tmp_check }}"
+  vars:
+    __zones_copied_tmp: "{{ __zones_copied.results | json_query('[*].dest') | default([]) }}"
+    __zones_copied_tmp_check: "{{ __zones_copied.results | json_query('[*].invocation.dest') | default([]) }}"
+
+- name: Remove zones not present in configuration
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop: "{{ __zones_present_list | difference(__zones_copied_list) }}"
+  notify: Reload firewalld

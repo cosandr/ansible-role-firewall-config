@@ -26,6 +26,21 @@ platforms:
       - "/sys/fs/cgroup:/sys/fs/cgroup:ro"
     groups: ["firewalld"]
 
+  - name: default-firewalld-declarative
+    image: "${uns:-jam82}/molecule-almalinux:9"
+    command: ""
+    pre_build_image: true
+    tty: false
+    capabilities:
+      - NET_ADMIN
+      - NET_RAW
+    tmpfs:
+      - /tmp
+      - /run
+    volumes:
+      - "/sys/fs/cgroup:/sys/fs/cgroup:ro"
+    groups: ["firewalld", "declarative"]
+
   - name: default-ufw
     image: "${uns:-jam82}/molecule-debian:11"
     command: ""
@@ -50,6 +65,7 @@ provisioner:
   inventory:
     group_vars:
       all:
+        firewall_declarative_config: false
         firewall_install: true
         firewall_rules:
           - port: 1233
@@ -60,9 +76,14 @@ provisioner:
               - "10.1.11.12"
               - "10.1.11.13"
               - "10.1.11.14"
+      declarative:
+        firewall_declarative_config: true
       firewalld:
         firewall_frontend: "firewalld"
         firewalld_zones:
+          - name: testing
+            interfaces:
+              - tap0
           - name: internal
             sources:
               - "10.1.1.0/24"
@@ -75,6 +96,10 @@ provisioner:
           - name: cockpit
             zone: internal
             state: absent
+
+          - name: http
+            zone: public
+            state: present
       ufw:
         firewall_frontend: "ufw"
         ufw_allow_dhcpv6: true
