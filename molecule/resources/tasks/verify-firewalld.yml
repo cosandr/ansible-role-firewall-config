@@ -1,0 +1,103 @@
+---
+
+- name: Invert state for all firewall vars
+  ansible.builtin.set_fact:
+    firewall_rules: >-
+      {%- set tmp = [] -%}
+      {%- for item in firewall_rules -%}
+      {{- tmp.append(item | combine({'state': (item.state | default('present') == 'present') | ternary('absent', 'present')})) -}}
+      {%- endfor -%}
+      {{ tmp }}
+    firewalld_zones: >-
+      {%- set tmp = [] -%}
+      {%- for item in firewalld_zones | default([]) -%}
+      {{- tmp.append(item | combine({'state': (item.state | default('present') == 'present') | ternary('absent', 'present')})) -}}
+      {%- endfor -%}
+      {{ tmp }}
+    firewalld_services: >-
+      {%- set tmp = [] -%}
+      {%- for item in firewalld_services | default([]) -%}
+      {{- tmp.append(item | combine({'state': (item.state | default('present') == 'present') | ternary('absent', 'present')})) -}}
+      {%- endfor -%}
+      {{ tmp }}
+
+- name: Configure zone sources
+  ansible.posix.firewalld:
+    zone: "{{ item.0.name }}"
+    source: "{{ item.1 }}"
+    permanent: true
+    state: "{{ (item.0.state | default('present') == 'present') | ternary('enabled', 'disabled') }}"
+  loop: "{{ firewalld_zones | subelements('sources', skip_missing=True) }}"
+  register: __output
+  failed_when: __output is not changed
+
+- name: Configure zone interfaces
+  ansible.posix.firewalld:
+    zone: "{{ item.0.name }}"
+    interface: "{{ item.1 }}"
+    permanent: true
+    state: "{{ (item.0.state | default('present') == 'present') | ternary('enabled', 'disabled') }}"
+  loop: "{{ firewalld_zones | subelements('interfaces', skip_missing=True) }}"
+  register: __output
+  failed_when: __output is not changed
+
+- name: Configure services
+  ansible.posix.firewalld:
+    service: "{{ item.name }}"
+    zone: "{{ zone }}"
+    permanent: true
+    state: "{{ (item.state | default('present') == 'present') | ternary('enabled', 'disabled') }}"
+  vars:
+    zone: "{{ item.zone | default('public') }}"
+  loop: "{{ firewalld_services }}"
+  when: item.sources is not defined or item.sources | length == 0
+  register: __output
+  failed_when: __output is not changed
+
+- name: Configure rich firewalld services  # noqa line-length
+  ansible.posix.firewalld:
+    zone: "{{ zone }}"
+    rich_rule: "rule family={{ item.0.family | default('ipv4') }} source address={{ item.1 }} service name=\"{{ item.0.name }}\" accept"
+    permanent: true
+    state: "{{ (item.0.state | default('present') == 'present') | ternary('enabled', 'disabled') }}"
+  vars:
+    zone: "{{ item.0.zone | default('public') }}"
+  loop: "{{ firewalld_services | subelements('sources', skip_missing=True) }}"
+  register: __output
+  failed_when: __output is not changed
+
+- name: Configure simple firewalld rules
+  ansible.posix.firewalld:
+    zone: "{{ item.zone | default('public') }}"
+    port: "{{ item.port }}/{{ item.protocol | default('tcp') }}"
+    permanent: true
+    state: "{{ (item.state | default('present') == 'present') | ternary('enabled', 'disabled') }}"
+  loop: "{{ firewall_rules }}"
+  when:
+    - item.sources is not defined or item.sources | length == 0
+    - item.source is not defined or item.source == 'any'
+  register: __output
+  failed_when: __output is not changed
+
+- name: Configure rich firewalld rules  # noqa line-length
+  ansible.posix.firewalld:
+    zone: "{{ item.zone | default('public') }}"
+    rich_rule: "rule family={{ item.family | default('ipv4') }} source address={{ item.source }} port port={{ item.port }} protocol={{ item.protocol | default('tcp') }} accept"
+    permanent: true
+    state: "{{ (item.state | default('present') == 'present') | ternary('enabled', 'disabled') }}"
+  loop: "{{ firewall_rules }}"
+  when:
+    - item.sources is not defined or item.sources | length == 0
+    - item.source is defined and item.source != 'any'
+  register: __output
+  failed_when: __output is not changed
+
+- name: Configure rich firewalld rules [multiple sources]  # noqa line-length
+  ansible.posix.firewalld:
+    zone: "{{ item.0.zone | default('public') }}"
+    rich_rule: "rule family={{ item.0.family | default('ipv4') }} source address={{ item.1 }} port port={{ item.0.port }} protocol={{ item.0.protocol | default('tcp') }} accept"
+    permanent: true
+    state: "{{ (item.0.state | default('present') == 'present') | ternary('enabled', 'disabled') }}"
+  loop: "{{ firewall_rules | subelements('sources', skip_missing=True) }}"
+  register: __output
+  failed_when: __output is not changed

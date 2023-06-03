@@ -1,0 +1,58 @@
+---
+
+- name: Remove before rules
+  ansible.builtin.blockinfile:
+    dest: /etc/ufw/before.rules
+    insertbefore: ^# don't delete the 'COMMIT' line or these rules won't be processed
+    block: "{{ ufw_before_rules }}"
+    state: absent
+  when: ufw_before_rules | length > 0
+  register: __output
+  failed_when: __output is not changed
+
+- name: Remove trusted sources
+  community.general.ufw:
+    delete: true
+    direction: "in"
+    rule: "allow"
+    src: "{{ item }}"
+  loop: "{{ ufw_trusted_sources }}"
+  register: __output
+  failed_when: __output is not changed
+
+- name: Delete ufw rules
+  community.general.ufw:
+    delete: true
+    direction: "{{ item.direction | default('in') }}"
+    rule: "{{ (item.state | default('present') == 'present') | ternary('allow', 'deny') }}"
+    src: "{{ item.source | default('any') }}"
+    port: "{{ item.port }}"
+    proto: "{{ item.protocol | default('tcp') }}"
+  loop: "{{ firewall_rules }}"
+  when: item.sources is not defined or item.sources | length == 0
+  register: __output
+  failed_when: __output is not changed
+
+- name: Delete ufw rules [multiple sources]
+  community.general.ufw:
+    delete: true
+    direction: "{{ item.0.direction | default('in') }}"
+    rule: "{{ (item.0.state | default('present') == 'present') | ternary('allow', 'deny') }}"
+    src: "{{ item.1 | default('any') }}"
+    port: "{{ item.0.port }}"
+    proto: "{{ item.0.protocol | default('tcp') }}"
+  loop: "{{ firewall_rules | subelements('sources', skip_missing=True) }}"
+  register: __output
+  failed_when: __output is not changed
+
+- name: Delete DHCPv6 client from local network
+  community.general.ufw:
+    delete: true
+    direction: "in"
+    rule: "allow"
+    src: "fe80::/64"
+    port: "546"
+    proto: "udp"
+  when: ufw_allow_dhcpv6
+  register: __output
+  failed_when: __output is not changed

@@ -1,0 +1,90 @@
+---
+
+dependency:
+  name: galaxy
+  options:
+    requirements-file: requirements.yml
+driver:
+  name: podman
+lint: |
+  set -e
+  yamllint .
+  ansible-lint
+platforms:
+  - name: default-firewalld
+    image: "${uns:-jam82}/molecule-almalinux:9"
+    command: ""
+    pre_build_image: true
+    tty: false
+    capabilities:
+      - NET_ADMIN
+      - NET_RAW
+    tmpfs:
+      - /tmp
+      - /run
+    volumes:
+      - "/sys/fs/cgroup:/sys/fs/cgroup:ro"
+    groups: ["firewalld"]
+
+  - name: default-ufw
+    image: "${uns:-jam82}/molecule-debian:11"
+    command: ""
+    pre_build_image: true
+    tty: false
+    capabilities:
+      - NET_ADMIN
+      - NET_RAW
+    tmpfs:
+      - /tmp
+      - /run
+    volumes:
+      - "/sys/fs/cgroup:/sys/fs/cgroup:ro"
+    groups: ["ufw"]
+provisioner:
+  name: ansible
+  log: true
+  playbooks:
+    prepare: ../resources/playbooks/prepare.yml
+    converge: ../resources/playbooks/converge.yml
+    verify: ../resources/playbooks/verify.yml
+  inventory:
+    group_vars:
+      all:
+        firewall_install: true
+        firewall_rules:
+          - port: 1233
+          - port: 1234
+            source: "10.1.11.11"
+          - port: 1235
+            sources:
+              - "10.1.11.12"
+              - "10.1.11.13"
+              - "10.1.11.14"
+      firewalld:
+        firewall_frontend: "firewalld"
+        firewalld_zones:
+          - name: internal
+            sources:
+              - "10.1.1.0/24"
+              - "10.1.2.0/24"
+        firewalld_services:
+          - name: cockpit
+            zone: public
+            state: absent
+
+          - name: cockpit
+            zone: internal
+            state: absent
+      ufw:
+        firewall_frontend: "ufw"
+        ufw_allow_dhcpv6: true
+        ufw_before_rules: |
+          # allow IGMP
+          -A ufw-before-input -p igmp -d 224.0.0.0/4 -j ACCEPT
+          -A ufw-before-output -p igmp -d 224.0.0.0/4 -j ACCEPT
+        ufw_trusted_sources:
+          - "10.2.1.2"
+          - "10.2.1.3"
+
+verifier:
+  name: ansible

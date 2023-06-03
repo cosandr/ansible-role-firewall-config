@@ -1,0 +1,16 @@
+---
+
+- name: Verify
+  hosts: all
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Verify firewalld
+      ansible.builtin.include_tasks:
+        file: ../tasks/verify-firewalld.yml
+      when: "'firewalld' in group_names"
+
+    - name: Verify ufw
+      ansible.builtin.include_tasks:
+        file: ../tasks/verify-ufw.yml
+      when: "'ufw' in group_names"
