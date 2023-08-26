@@ -1,5 +1,10 @@
 ---
 
+- name: Fail if rich rules are specified
+  ansible.builtin.fail:
+    msg: "firewalld_rich_rules is not supported in declarative mode"
+  when: firewalld_rich_rules
+
 - name: Add public zone to facts if it's missing
   ansible.builtin.set_fact:
     firewalld_zones: "{{ __firewalld_declarative_default_zones + firewalld_zones }}"

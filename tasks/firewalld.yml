@@ -1,10 +1,10 @@
 ---
 
-- name: Create configured zones
+- name: Configure zones
   ansible.posix.firewalld:
     zone: "{{ item.name }}"
     permanent: true
-    state: present
+    state: "{{ item.state | default('present') }}"
   notify: Reload firewalld
   loop: "{{ firewalld_zones }}"
   loop_control:
@@ -42,7 +42,7 @@
   loop_control:
     label: "{{ item.0.name }} - {{ item.1 }}"
 
-- name: Configure services
+- name: Configure simple services
   ansible.posix.firewalld:
     service: "{{ item.name }}"
     zone: "{{ zone }}"
@@ -56,7 +56,7 @@
     label: "{{ item.name }} [{{ zone }}]"
   when: item.sources is not defined or item.sources | length == 0
 
-- name: Configure rich firewalld services  # noqa line-length
+- name: Configure advanced firewalld services  # noqa line-length
   ansible.posix.firewalld:
     zone: "{{ zone }}"
     rich_rule: "rule family={{ item.0.family | default('ipv4') }} source address={{ item.1 }} service name=\"{{ item.0.name }}\" accept"
@@ -81,7 +81,7 @@
     - item.sources is not defined or item.sources | length == 0
     - item.source is not defined or item.source == 'any'
 
-- name: Configure rich firewalld rules  # noqa line-length
+- name: Configure advanced firewalld rules  # noqa line-length
   ansible.posix.firewalld:
     zone: "{{ item.zone | default('public') }}"
     rich_rule: "rule family={{ item.family | default('ipv4') }} source address={{ item.source }} port port={{ item.port }} protocol={{ item.protocol | default('tcp') }} accept"
@@ -93,7 +93,7 @@
     - item.sources is not defined or item.sources | length == 0
     - item.source is defined and item.source != 'any'
 
-- name: Configure rich firewalld rules [multiple sources]  # noqa line-length
+- name: Configure advanced firewalld rules [multiple sources]  # noqa line-length
   ansible.posix.firewalld:
     zone: "{{ item.0.zone | default('public') }}"
     rich_rule: "rule family={{ item.0.family | default('ipv4') }} source address={{ item.1 }} port port={{ item.0.port }} protocol={{ item.0.protocol | default('tcp') }} accept"
@@ -102,4 +102,15 @@
   loop: "{{ firewall_rules | subelements('sources', skip_missing=True) }}"
   loop_control:
     label: "{{ item.0.port }} - {{ item.1 }}"
+  notify: Reload firewalld
+
+- name: Configure firewalld rich rules
+  ansible.posix.firewalld:
+    zone: "{{ item.zone | default('public') }}"
+    rich_rule: "{{ item.rich_rule }}"
+    permanent: true
+    state: "{{ (item.state | default('present') == 'present') | ternary('enabled', 'disabled') }}"
+  loop: "{{ firewalld_rich_rules }}"
+  loop_control:
+    label: "{{ item.zone }} - {{ item.rich_rule }}"
   notify: Reload firewalld
