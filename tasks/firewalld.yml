@@ -1,6 +1,6 @@
 ---
 
-- name: Configure zones
+- name: Create or remove zones
   ansible.posix.firewalld:
     zone: "{{ item.name }}"
     permanent: true
@@ -19,6 +19,48 @@
   register: __firewalld_def_zone
   changed_when: '"ZONE_ALREADY_SET" not in __firewalld_def_zone.stderr'
   when: firewalld_default_zone
+
+- name: Configure zone masquarade
+  ansible.posix.firewalld:
+    zone: "{{ item.name }}"
+    masquerade: true
+    permanent: true
+    state: "{{ item.masquerade | ternary('enabled', 'disabled') }}"
+  notify: Reload firewalld
+  loop: "{{ firewalld_zones }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when:
+    - item.state | default('present') == 'present'
+    - item.masquerade is defined
+
+- name: Configure zone icmp_block
+  ansible.posix.firewalld:
+    zone: "{{ item.name }}"
+    icmp_block: "{{ item.icmp_block }}"
+    permanent: true
+    state: "{{ (item.icmp_block_state | default('present') == 'present') | ternary('enabled', 'disabled') }}"
+  notify: Reload firewalld
+  loop: "{{ firewalld_zones }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when:
+    - item.state | default('present') == 'present'
+    - item.icmp_block is defined
+
+- name: Configure zone icmp_block_inversion
+  ansible.posix.firewalld:
+    zone: "{{ item.name }}"
+    icmp_block_inversion: true
+    permanent: true
+    state: "{{ item.icmp_block_inversion | ternary('enabled', 'disabled') }}"
+  notify: Reload firewalld
+  loop: "{{ firewalld_zones }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when:
+    - item.state | default('present') == 'present'
+    - item.icmp_block_inversion is defined
 
 - name: Add zone sources
   ansible.posix.firewalld:

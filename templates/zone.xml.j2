@@ -28,4 +28,13 @@
 {% if item.forward | default(false) %}
   <forward/>
 {% endif %}
+{% if item.masquerade | default(false) %}
+  <masquerade/>
+{% endif %}
+{% if item.icmp_block_inversion | default(false) %}
+  <icmp_block_inversion/>
+{% endif %}
+{% if item.icmp_block is defined and item.icmp_block_state | default('present') == 'present' %}
+  <icmp-block name="{{ item.icmp_block }}"/>
+{% endif %}
 </zone>
