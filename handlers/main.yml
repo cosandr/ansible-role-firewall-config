@@ -6,11 +6,18 @@
     state: started
     enabled: true
 
-- name: Reload firewalld
+- name: Reload firewalld always
   ansible.builtin.systemd:
     name: firewalld
     state: reloaded
 
+- name: Reload firewalld
+  ansible.builtin.systemd:
+    name: firewalld
+    state: reloaded
+  when: firewall_reload_handlers | bool
+
 - name: Reload ufw
   community.general.ufw:
     state: reloaded
+  when: firewall_reload_handlers | bool

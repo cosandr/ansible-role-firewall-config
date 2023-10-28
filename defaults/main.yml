@@ -1,5 +1,6 @@
 ---
 
+firewall_reload_handlers: true
 firewall_frontend: ""
 firewall_rules: []
 firewalld_default_zone: ""

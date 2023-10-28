@@ -5,7 +5,7 @@
     zone: "{{ item.name }}"
     permanent: true
     state: "{{ item.state | default('present') }}"
-  notify: Reload firewalld
+  notify: Reload firewalld always
   loop: "{{ firewalld_zones }}"
   loop_control:
     label: "{{ item.name }}"
