@@ -20,6 +20,12 @@
       {{- tmp.append(item | combine({'state': (item.state | default('present') == 'present') | ternary('absent', 'present')})) -}}
       {%- endfor -%}
       {{ tmp }}
+    firewalld_rich_rules: >-
+      {%- set tmp = [] -%}
+      {%- for item in firewalld_rich_rules | default([]) -%}
+      {{- tmp.append(item | combine({'state': (item.state | default('present') == 'present') | ternary('absent', 'present')})) -}}
+      {%- endfor -%}
+      {{ tmp }}
 
 - name: Configure zone sources
   ansible.posix.firewalld:
@@ -41,7 +47,7 @@
   register: __output
   failed_when: __output is not changed
 
-- name: Configure services
+- name: Configure simple services
   ansible.posix.firewalld:
     service: "{{ item.name }}"
     zone: "{{ zone }}"
@@ -50,17 +56,18 @@
   vars:
     zone: "{{ item.zone | default('public') }}"
   loop: "{{ firewalld_services }}"
-  when: item.sources is not defined or item.sources | length == 0
   register: __output
   failed_when: __output is not changed
+  when: item.sources is not defined or item.sources | length == 0
 
-- name: Configure rich firewalld services  # noqa line-length
+- name: Configure advanced firewalld services  # noqa line-length
   ansible.posix.firewalld:
     zone: "{{ zone }}"
-    rich_rule: "rule family={{ item.0.family | default('ipv4') }} source address={{ item.1 }} service name=\"{{ item.0.name }}\" accept"
+    rich_rule: "rule family={{ family }} source address={{ item.1 }} service name=\"{{ item.0.name }}\" accept"
     permanent: true
     state: "{{ (item.0.state | default('present') == 'present') | ternary('enabled', 'disabled') }}"
   vars:
+    family: "{{ item.0.family | default((item.1 | ansible.utils.ipv4) | ternary('ipv4', 'ipv6')) }}"
     zone: "{{ item.0.zone | default('public') }}"
   loop: "{{ firewalld_services | subelements('sources', skip_missing=True) }}"
   register: __output
@@ -79,12 +86,14 @@
   register: __output
   failed_when: __output is not changed
 
-- name: Configure rich firewalld rules  # noqa line-length
+- name: Configure advanced firewalld rules  # noqa line-length
   ansible.posix.firewalld:
     zone: "{{ item.zone | default('public') }}"
-    rich_rule: "rule family={{ item.family | default('ipv4') }} source address={{ item.source }} port port={{ item.port }} protocol={{ item.protocol | default('tcp') }} accept"
+    rich_rule: "rule family={{ family }} source address={{ item.source }} port port={{ item.port }} protocol={{ item.protocol | default('tcp') }} accept"
     permanent: true
     state: "{{ (item.state | default('present') == 'present') | ternary('enabled', 'disabled') }}"
+  vars:
+    family: "{{ item.family | default((item.source | ansible.utils.ipv4) | ternary('ipv4', 'ipv6')) }}"
   loop: "{{ firewall_rules }}"
   when:
     - item.sources is not defined or item.sources | length == 0
@@ -92,12 +101,24 @@
   register: __output
   failed_when: __output is not changed
 
-- name: Configure rich firewalld rules [multiple sources]  # noqa line-length
+- name: Configure advanced firewalld rules [multiple sources]  # noqa line-length
   ansible.posix.firewalld:
     zone: "{{ item.0.zone | default('public') }}"
-    rich_rule: "rule family={{ item.0.family | default('ipv4') }} source address={{ item.1 }} port port={{ item.0.port }} protocol={{ item.0.protocol | default('tcp') }} accept"
+    rich_rule: "rule family={{ family }} source address={{ item.1 }} port port={{ item.0.port }} protocol={{ item.0.protocol | default('tcp') }} accept"
     permanent: true
     state: "{{ (item.0.state | default('present') == 'present') | ternary('enabled', 'disabled') }}"
+  vars:
+    family: "{{ item.0.family | default((item.1 | ansible.utils.ipv4) | ternary('ipv4', 'ipv6')) }}"
   loop: "{{ firewall_rules | subelements('sources', skip_missing=True) }}"
+  register: __output
+  failed_when: __output is not changed
+
+- name: Configure firewalld rich rules
+  ansible.posix.firewalld:
+    zone: "{{ item.zone | default('public') }}"
+    rich_rule: "{{ item.rich_rule }}"
+    permanent: true
+    state: "{{ (item.state | default('present') == 'present') | ternary('enabled', 'disabled') }}"
+  loop: "{{ firewalld_rich_rules }}"
   register: __output
   failed_when: __output is not changed

@@ -63,19 +63,38 @@ provisioner:
     converge: ../resources/playbooks/converge.yml
     verify: ../resources/playbooks/verify.yml
   inventory:
+    host_vars:
+      default-firewalld-declarative:
+        firewalld_rich_rules: []
     group_vars:
       all:
         firewall_declarative_config: false
         firewall_install: true
         firewall_rules:
-          - port: 1233
-          - port: 1234
+          - port: 1200
+          - port: 1240
             source: "10.1.11.11"
-          - port: 1235
+          - port: 1241
+            # IPv4 only
             sources:
               - "10.1.11.12"
               - "10.1.11.13"
               - "10.1.11.14"
+          # IPv6 only
+          - port: 1260
+            source: "fd00:0:0:a:c::12"
+          - port: 1261
+            sources:
+              - "fd00:0:0:a:c::12"
+              - "fd00:0:0:a:c::13"
+              - "fd00:0:0:a:c::14"
+          # All the things
+          - port: 1300
+            sources:
+              - "10.1.11.12"
+              - "10.1.20.16/31"
+              - "fd00:0:0:a:c::123"
+              - "fd00:0:0:a:c::/80"
       declarative:
         firewall_declarative_config: true
       firewalld:
@@ -88,6 +107,7 @@ provisioner:
             sources:
               - "10.1.1.0/24"
               - "10.1.2.0/24"
+              - "fd00:0:0:a::/64"
         firewalld_services:
           - name: cockpit
             zone: public
@@ -100,6 +120,19 @@ provisioner:
           - name: http
             zone: public
             state: present
+
+          - name: http
+            zone: public
+            state: present
+            sources:
+              - "10.1.11.12"
+              - "10.1.20.16/31"
+              - "fd00:0:0:a:c::123"
+              - "fd00:0:0:a:c::/80"
+        firewalld_rich_rules:
+          - zone: public
+            rich_rule: "rule family=ipv6 masquerade"
+
       ufw:
         firewall_frontend: "ufw"
         ufw_allow_dhcpv6: true
