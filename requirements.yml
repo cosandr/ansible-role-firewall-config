@@ -1,6 +1,7 @@
 ---
 
 collections:
+  - ansible.utils
   - community.general
 
 roles: []

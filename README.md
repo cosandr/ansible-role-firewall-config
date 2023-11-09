@@ -2,6 +2,10 @@
 
 This role configures rules for UFW and firewalld.
 
+## Requirements
+
+`netaddr` on Ansible controller.
+
 ## Example dependency
 
 ```yml

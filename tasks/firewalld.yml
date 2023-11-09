@@ -101,10 +101,11 @@
 - name: Configure advanced firewalld services  # noqa line-length
   ansible.posix.firewalld:
     zone: "{{ zone }}"
-    rich_rule: "rule family={{ item.0.family | default('ipv4') }} source address={{ item.1 }} service name=\"{{ item.0.name }}\" accept"
+    rich_rule: "rule family={{ family }} source address={{ item.1 }} service name=\"{{ item.0.name }}\" accept"
     permanent: true
     state: "{{ (item.0.state | default('present') == 'present') | ternary('enabled', 'disabled') }}"
   vars:
+    family: "{{ item.0.family | default((item.1 | ansible.utils.ipv4) | ternary('ipv4', 'ipv6')) }}"
     zone: "{{ item.0.zone | default('public') }}"
   loop: "{{ firewalld_services | subelements('sources', skip_missing=True) }}"
   loop_control:
@@ -126,9 +127,11 @@
 - name: Configure advanced firewalld rules  # noqa line-length
   ansible.posix.firewalld:
     zone: "{{ item.zone | default('public') }}"
-    rich_rule: "rule family={{ item.family | default('ipv4') }} source address={{ item.source }} port port={{ item.port }} protocol={{ item.protocol | default('tcp') }} accept"
+    rich_rule: "rule family={{ family }} source address={{ item.source }} port port={{ item.port }} protocol={{ item.protocol | default('tcp') }} accept"
     permanent: true
     state: "{{ (item.state | default('present') == 'present') | ternary('enabled', 'disabled') }}"
+  vars:
+    family: "{{ item.family | default((item.source | ansible.utils.ipv4) | ternary('ipv4', 'ipv6')) }}"
   loop: "{{ firewall_rules }}"
   notify: Reload firewalld
   when:
@@ -138,9 +141,11 @@
 - name: Configure advanced firewalld rules [multiple sources]  # noqa line-length
   ansible.posix.firewalld:
     zone: "{{ item.0.zone | default('public') }}"
-    rich_rule: "rule family={{ item.0.family | default('ipv4') }} source address={{ item.1 }} port port={{ item.0.port }} protocol={{ item.0.protocol | default('tcp') }} accept"
+    rich_rule: "rule family={{ family }} source address={{ item.1 }} port port={{ item.0.port }} protocol={{ item.0.protocol | default('tcp') }} accept"
     permanent: true
     state: "{{ (item.0.state | default('present') == 'present') | ternary('enabled', 'disabled') }}"
+  vars:
+    family: "{{ item.0.family | default((item.1 | ansible.utils.ipv4) | ternary('ipv4', 'ipv6')) }}"
   loop: "{{ firewall_rules | subelements('sources', skip_missing=True) }}"
   loop_control:
     label: "{{ item.0.port }} - {{ item.1 }}"
