@@ -1,9 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <zone>
 {% for s in firewalld_services if ( s.zone | default('public') == item.name
-      and s.state | default('present') == 'present'
-      and not s.sources | default([]) ) %}
+      and s.state | default('present') == 'present' ) %}
+{% if s.sources | default([]) | length == 0 %}
   <service name="{{ s.name }}"/>
+{% else %}
+{% for source in s.sources %}
+  <rule family="{{ s.family | default((source | ansible.utils.ipv4) | ternary('ipv4', 'ipv6')) }}">
+    <source address="{{ source }}"/>
+    <service name="{{ s.name }}"/>
+    <accept/>
+  </rule>
+{% endfor %}
+{% endif %}
 {% endfor %}
 {% for r in firewall_rules if ( r.zone | default('public') == item.name
       and r.state | default('present') == 'present' ) %}
@@ -11,7 +20,7 @@
   <port port="{{ r.port }}" protocol="{{ r.protocol | default('tcp') }}"/>
 {% else %}
 {% for source in r.sources | default([r.source]) %}
-  <rule family="{{ r.family | default('ipv4') }}">
+  <rule family="{{ r.family | default((source | ansible.utils.ipv4) | ternary('ipv4', 'ipv6')) }}">
     <source address="{{ source }}"/>
     <port port="{{ r.port }}" protocol="{{ r.protocol | default('tcp') }}"/>
     <accept/>
