@@ -23,6 +23,7 @@ jobs:
           pip install -U pip wheel setuptools
           pip install 'molecule<5.0' 'ansible-lint<6.20' 'yamllint<1.30' 'jmespath<2.0'
           pip install 'molecule-plugins[podman]<24.0'
+          pip install netaddr
 
       - name: Run molecule
         env:

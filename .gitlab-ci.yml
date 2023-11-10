@@ -16,4 +16,5 @@ stages:
 molecule:
   stage: test
   script:
+    - pip install netaddr
     - molecule test
