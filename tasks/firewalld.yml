@@ -101,7 +101,7 @@
 - name: Configure advanced firewalld services  # noqa line-length
   ansible.posix.firewalld:
     zone: "{{ zone }}"
-    rich_rule: "rule family={{ family }} source address={{ item.1 }} service name=\"{{ item.0.name }}\" accept"
+    rich_rule: "rule family={{ family }} source address={{ item.1 }} service name=\"{{ item.0.name }}\" {{ item.0.action | default('accept') }}"
     permanent: true
     state: "{{ (item.0.state | default('present') == 'present') | ternary('enabled', 'disabled') }}"
   vars:
@@ -127,7 +127,7 @@
 - name: Configure advanced firewalld rules  # noqa line-length
   ansible.posix.firewalld:
     zone: "{{ item.zone | default('public') }}"
-    rich_rule: "rule family={{ family }} source address={{ item.source }} port port={{ item.port }} protocol={{ item.protocol | default('tcp') }} accept"
+    rich_rule: "rule family={{ family }} source address={{ item.source }} port port={{ item.port }} protocol={{ item.protocol | default('tcp') }} {{ item.action | default('accept') }}"
     permanent: true
     state: "{{ (item.state | default('present') == 'present') | ternary('enabled', 'disabled') }}"
   vars:
@@ -141,7 +141,7 @@
 - name: Configure advanced firewalld rules [multiple sources]  # noqa line-length
   ansible.posix.firewalld:
     zone: "{{ item.0.zone | default('public') }}"
-    rich_rule: "rule family={{ family }} source address={{ item.1 }} port port={{ item.0.port }} protocol={{ item.0.protocol | default('tcp') }} accept"
+    rich_rule: "rule family={{ family }} source address={{ item.1 }} port port={{ item.0.port }} protocol={{ item.0.protocol | default('tcp') }} {{ item.0.action | default('accept') }}"
     permanent: true
     state: "{{ (item.0.state | default('present') == 'present') | ternary('enabled', 'disabled') }}"
   vars:
