@@ -16,5 +16,10 @@
   ansible.builtin.include_tasks: detect.yml
   when: not firewall_frontend
 
+- name: Configure {{ firewall_frontend }} declaratively
+  ansible.builtin.include_tasks: "{{ firewall_frontend }}-declarative.yml"
+  when: firewall_declarative_config
+
 - name: Configure {{ firewall_frontend }}
-  ansible.builtin.include_tasks: "{{ firewall_declarative_config | ternary('{{ firewall_frontend }}-declarative.yml', '{{ firewall_frontend }}.yml') }}"
+  ansible.builtin.include_tasks: "{{ firewall_frontend }}.yml"
+  when: not firewall_declarative_config
