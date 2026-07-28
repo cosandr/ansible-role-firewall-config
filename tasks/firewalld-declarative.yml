@@ -3,7 +3,7 @@
 - name: Fail if rich rules are specified
   ansible.builtin.fail:
     msg: "firewalld_rich_rules is not supported in declarative mode"
-  when: firewalld_rich_rules
+  when: firewalld_rich_rules | length > 0
 
 - name: Add public zone to facts if it's missing
   ansible.builtin.set_fact:

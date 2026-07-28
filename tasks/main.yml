@@ -6,7 +6,7 @@
     state: present
   notify: Start firewall frontend
   when:
-    - firewall_frontend
+    - firewall_frontend != ''
     - firewall_install
 
 - name: Flush handlers
@@ -14,7 +14,7 @@
 
 - name: Detect firewall in use
   ansible.builtin.include_tasks: detect.yml
-  when: not firewall_frontend
+  when: firewall_frontend == ''
 
 - name: Configure {{ firewall_frontend }} declaratively
   ansible.builtin.include_tasks: "{{ firewall_frontend }}-declarative.yml"

@@ -18,7 +18,7 @@
     cmd: "firewall-cmd --set-default-zone={{ firewalld_default_zone }}"
   register: __firewalld_def_zone
   changed_when: '"ZONE_ALREADY_SET" not in __firewalld_def_zone.stderr'
-  when: firewalld_default_zone
+  when: firewalld_default_zone != ''
 
 - name: Configure zone masquarade
   ansible.posix.firewalld:
